@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from argparse import ArgumentParser
 import numpy as np
 import pandas as pd
@@ -29,7 +31,22 @@ data = np.around(filtered_data * max_marks * 2) / 2.0
 
 question_data = np.vstack((max_marks, bloom_level)).transpose()
 
-pd.DataFrame(data).to_csv(args.file + "_student.csv", index=False)
+b = np.max(question_data[:, 1])
+a = np.zeros((data.shape[0], b))
+m = np.zeros(b)
+for i, j in enumerate(question_data):
+    a[:, j[1] - 1] += data[:,i]
+    m[j[1] - 1] += j[0]
+percent = np.divide(a, m, out=np.zeros_like(a), where=m != 0)
+
+target = np.argmax(percent, axis=1)
+
+final_data = np.hstack((data, target.reshape((target.shape[0], 1))))
+
+df = pd.DataFrame(final_data)
+df.columns = [str(i + 1) for i in range(question_data.shape[0])] + ["Target"]
+df["Target"] = df["Target"].astype('int32')
+df.to_csv(args.file + "_student.csv", index=False)
 df = pd.DataFrame(question_data)
 df.columns = ["MaxMarks", "BloomLevel"]
 df.to_csv(args.file + "_questions.csv", index=False)
